@@ -5,22 +5,14 @@ Mainly for visualization purpose, nothing better than propagation scaffold.
 
 import os
 import warnings
-import numpy as np
-import pandas as pd
 import re
 import h5py
-import matplotlib.gridspec as gridspec
 import xarray as xr
-from frites.workflow import WfMi
-from frites.dataset import DatasetEphy
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 from frites import io
-from frites.stats.stats_nonparam import confidence_interval
 import seaborn as sns
-from sklearn.manifold import TSNE
 from scipy.signal import savgol_filter
-from collections import Counter
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 # to remove the spam of pandas FutureWarning with iteritems
@@ -29,17 +21,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 if __name__ == "__main__":
     # define all sites
-    ALL_LAMINAR = ['Mo180411001', 'Mo180412002', 'Mo180626003', 'Mo180627003', 'Mo180619002',
-                   'Mo180622002', 'Mo180704003', 'Mo180418002', 'Mo180419003', 'Mo180426004',
-                   'Mo180601001',
-                   'Mo180523002', 'Mo180705002', 'Mo180706002', 'Mo180710002',
-                   'Mo180711004', 'Mo180712006', 't150303002', 't150319003', 't150423002',
-                   't150430002', 't150320002',
-                   't140924003', 't140930001', 't141001001', 't141008001', 't141010003',
-                   't150122001', 't150123001', 't150128001', 't150204001', 't150205004',
-                   't150716001',
-                   'Mo180615002-Mo180615005', 't150327002-t150327003',
-                   't150520003-t150520005', 't150702002-t150702001']
+    ALL_LAMINAR = ['Mo180412002']
 
     # all possible probes
     probes = [1, 2]
@@ -114,13 +96,8 @@ if __name__ == "__main__":
             pca = PCA(n_components=3)
             LD_grass = pca.fit_transform(LD.values)
 
-            # generate the TSNE
-            # X_embedded = TSNE(n_components=2).fit_transform(LD)
-
             # smooth the trajectory using a Savitzky-Golay filter
             LD_grass_filt = savgol_filter(LD_grass, window_length=20, polyorder=2, axis=0)
-            # LD_grass_filt = savgol_filter(LD_grass, window_length=30, polyorder=2, axis=0)
-            # LD_grass_filt = savgol_filter(X_embedded, window_length=10, polyorder=2, axis=0)
 
             # create a 3d figure to plot the trajectory
             sns.set_style('ticks')
