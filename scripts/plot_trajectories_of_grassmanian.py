@@ -23,6 +23,9 @@ if __name__ == "__main__":
     # define all sites
     ALL_LAMINAR = ['Mo180412002']
 
+    # add the path
+    PATH = 'data/'
+
     # all possible probes
     probes = [1, 2]
     # define the method to run
@@ -39,20 +42,13 @@ if __name__ == "__main__":
     else:
         server = '/envau/work'  # niolon
 
-    PATH_FIGURES = server + \
-        '/comco/lopez.l/Electrophysiology/ephy_laminar_MUA/Results/Full_trial/' \
-        'plots_grassmanian/'
-
     # loop over the sessions
     for SESSION in ALL_LAMINAR:
-        PATH_DATA = server + \
-            '/comco/lopez.l/Electrophysiology/ephy_laminar_MUA/Results/Full_trial/' \
-            'data_paper/' + SESSION + '/'
         # iterate on the probes
         for probe in probes:
             # Open the evolution of the LDA computed for one cross-validation fold
-            file_name_mua = [i for i in os.listdir(PATH_DATA) if
-                             os.path.isfile(os.path.join(PATH_DATA, i))
+            file_name_mua = [i for i in os.listdir(PATH) if
+                             os.path.isfile(os.path.join(PATH, i))
                              and f'{SESSION}' in i and '.nc' in i and
                              'SC' not in i and f'probe_{probe}' in i and behavior in i and 'cv'
                              not in i and method in i]
@@ -63,7 +59,7 @@ if __name__ == "__main__":
                 file_name_mua = file_name_mua[0]
 
             # open the file
-            lda_evolution_site = xr.load_dataset(os.path.join(PATH_DATA, file_name_mua))
+            lda_evolution_site = xr.load_dataset(os.path.join(PATH, file_name_mua))
 
             # get the events
             events_onset = lda_evolution_site.task_events_onset
@@ -78,10 +74,6 @@ if __name__ == "__main__":
                                                            times=slice(t_SEL, t_GO))
             # get the absolute value
             LD = abs(LD1)
-
-            # Step 1: Create the initial binary mask based on the 75th percentile
-            # threshold = np.percentile(np.abs(LD1.values), 75)
-            # LD = np.where((np.abs(LD1) > threshold), np.abs(LD1), 0)
 
             # get an index for the layers
             norm_layers =\
@@ -137,6 +129,6 @@ if __name__ == "__main__":
 
             fig.suptitle(f'{SESSION} - Probe {probe} - {method} - {behavior}', fontsize=16)
             fig.tight_layout()
-            fig.savefig(os.path.join(PATH_FIGURES,
+            fig.savefig(os.path.join(PATH,
                                      f'{SESSION}_probe_{probe}_{method}_{behavior}.png'),
                         dpi=300, bbox_inches='tight')

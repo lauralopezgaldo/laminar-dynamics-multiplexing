@@ -234,7 +234,7 @@ if __name__ == "__main__":
     SITES = ['Mo180412002']
 
     # set the path to the data
-    PATH = "data/"
+    PATH = 'data/'
 
     # all possible probes
     PROBES = [1]
