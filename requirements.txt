@@ -1,0 +1,9 @@
+pandas==1.5.0
+h5py==3.7.0
+numpy==1.23.3
+xarray==2022.9.0
+matplotlib==3.5.3
+matplotlib-inline==0.1.6
+sklearn==0.0
+frites @ git+https://github.com/brainets/frites.git@0844598951a3f554276894d2c60f45a5751961d8
+openpyxl==3.0.10
