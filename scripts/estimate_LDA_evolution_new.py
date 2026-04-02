@@ -689,23 +689,17 @@ def plot_significant_mi(mua_xr, axis, behavioral_condition, trials_color=None):
 
 if __name__ == "__main__":
     # define the sessions to run the analysis
-    ALL_LAMINAR = ['Mo180411001', 'Mo180412002', 'Mo180626003', 'Mo180627003', 'Mo180619002',
-                   'Mo180622002', 'Mo180704003', 'Mo180418002', 'Mo180419003', 'Mo180426004',
-                   'Mo180601001',
-                   'Mo180523002', 'Mo180705002', 'Mo180706002', 'Mo180710002',
-                   'Mo180711004', 'Mo180712006', 't150303002', 't150319003', 't150423002',
-                   't150430002', 't150320002',
-                   't140924003', 't140930001', 't141001001', 't141008001', 't141010003',
-                   't150122001', 't150123001', 't150128001', 't150204001', 't150205004',
-                   't150716001',
-                   'Mo180615002-Mo180615005', 't150327002-t150327003',
-                   't150520003-t150520005', 't150702002-t150702001']
+    ALL_LAMINAR = ['Mo180412002']
 
     # all possible probes
-    probes = [1, 2]
+    probes = [1]
+
+    # set the path
+    PATH = 'data/'
+
     # define the method to run
     method = 'LDA'  # 'PCA' or 'LDA'
-    behavior = 'trial_type'  # 'trial_type' or 'mvt_dir'
+    behavior = 'mvt_dir'  # 'trial_type' or 'mvt_dir'
     trial_type = 2  # trial type to use to compute the mvt_dir behavior
     trial_type_labels = ['blue', 'green', 'pink']
 
@@ -715,32 +709,8 @@ if __name__ == "__main__":
 
     # loop over the sessions
     for SESSION in ALL_LAMINAR:
-        # set the path of the data and get the name of the files
-        # check where are we running the code
-        current_path = os.getcwd()
-
-        if current_path.startswith('C:'):
-            server = 'W:'  # local w VPN
-        else:
-            server = '/envau/work'  # niolon
-
-        PATH = server + \
-            '/comco/lopez.l/Electrophysiology/ephy_laminar_MUA/Results/Preprocessed_data/' + \
-            SESSION + '/'
-        PATH_DATA = server + \
-            '/comco/lopez.l/Electrophysiology/ephy_laminar_MUA/Results/Full_trial/' \
-            'data_paper/' + SESSION + '/'
-
-        # create the directory if it does not exist
-        if not os.path.exists(PATH_DATA):
-            os.makedirs(PATH_DATA)
-
-        PATH_FIGURES = server + \
-            '/comco/lopez.l/Electrophysiology/ephy_laminar_MUA/Results/Full_trial/' \
-            'plots_similarity_corrected/'
-
         # load the excel file from the PATH_Figures
-        excel_file = os.path.join(PATH_FIGURES, f'Mua_check_channels.xlsx')
+        excel_file = os.path.join(PATH, f'Mua_check_channels.xlsx')
 
         # load the excel file
         df_mua_info = pd.read_excel(excel_file)
@@ -874,21 +844,21 @@ if __name__ == "__main__":
                                                        projected_data_xr=projection_evolution,
                                                        num_dims=n_dims,
                                                        behavioral_condition=behavior)
-                    # # get the reference vector
-                    # if behavior == 'mvt_dir':
-                    #     event_name_ref = 'GO'
-                    # if behavior == 'trial_type':
-                    #     event_name_ref = 'SEL'
-                    # else:
-                    #     raise ValueError('behavior should be either trial_type or mvt_dir')
-                    #
-                    # reference_vector_lda = get_lda_weight_vector(mua_xr=mua_train,
-                    #                                              event_name=event_name_ref,
-                    #                                              behavioral_parameter=behavior)
-                    # new_weight_evolution, new_projection_evolution = \
-                    #     correct_sign_with_reference(weights_xr=weight_evolution,
-                    #                                 projected_data_xr=projection_evolution,
-                    #                                 reference_vec=reference_vector_lda)
+                    # get the reference vector
+                    if behavior == 'mvt_dir':
+                        event_name_ref = 'GO'
+                    elif behavior == 'trial_type':
+                        event_name_ref = 'SEL'
+                    else:
+                        raise ValueError('behavior should be either trial_type or mvt_dir')
+
+                    reference_vector_lda = get_lda_weight_vector(mua_xr=mua_train,
+                                                                 event_name=event_name_ref,
+                                                                 behavioral_parameter=behavior)
+                    new_weight_evolution, new_projection_evolution = \
+                        correct_sign_with_reference(weights_xr=weight_evolution,
+                                                    projected_data_xr=projection_evolution,
+                                                    reference_vec=reference_vector_lda)
                 else:
                     new_weight_evolution = weight_evolution
                     new_projection_evolution = projection_evolution
@@ -897,81 +867,31 @@ if __name__ == "__main__":
                 similarity = compute_cosine_similarity(new_weight_evolution.sel(dimensions='dim-1'),
                                                        new_weight_evolution.sel(dimensions='dim-1'))
 
-
-            # figure_similarity = \
-            #     plot_similarity_matrix(weights=new_weight_evolution.sel(dimensions='dim-1'),
-            #                            cosine_similarity=similarity,
-            #                            title=f'Similarity-{SESSION}-{probe}-{method}',
-            #                            xlabel=None,
-            #                            ylabel=None)
-
-            # figure_similarity.savefig(os.path.join(PATH_FIGURES,
-            #                                        f'{SESSION}_probe_{probe}_similarity_{method}_'
-            #                                        f'{behavior}.png'),
-            #                           dpi=300, bbox_inches='tight')
-
-            plt.close('all')
             io.logger.info(f'Finished processing {SESSION} probe {probe} with {method} method!')
 
-            # # plot_weight_evolution(coefficients_evolution=new_weight_evolution, i_dimension=0)
-            #
+            # plot the evolution of the weights
+            plot_weight_evolution(coefficients_evolution=new_weight_evolution, i_dimension=0)
 
-            #
-            # # plot the evolution of the projections
-            # if behavior == 'mvt_dir':
-            #     figure_conditions_projection = \
-            #         plot_mua_per_mvt_dir_ci(new_projection_evolution.sel(dimensions='dim-1'))
-            #
-            #     # figure_conditions_projection.savefig(os.path.join(
-            #     #     PATH_FIGURES, f'{SESSION}_projections_evolution_mvt_'
-            #     #                   f'{method}_ttype_{trial_type}.png'),
-            #     #                                      dpi=300,
-            #     #                                      bbox_inches='tight')
-            # elif behavior == 'trial_type':
-            #     figure_conditions_projection = \
-            #         plot_mua_per_trial_type_ci(new_projection_evolution.sel(dimensions='dim-1'))
-            #
-            #     # figure_conditions_projection.savefig(os.path.join(
-            #     # PATH_FIGURES,
-            #     #                                                   f'{SESSION}_projections_evolution_'
-            #     #                                                   f'ttype_'
-            #     #                                                   f'{method}.png'), dpi=300,
-            #     #                                      bbox_inches='tight')
+            # plot the evolution of the projections
+            if behavior == 'mvt_dir':
+                figure_conditions_projection = \
+                    plot_mua_per_mvt_dir_ci(new_projection_evolution.sel(dimensions='dim-1'))
+
+            elif behavior == 'trial_type':
+                figure_conditions_projection = \
+                    plot_mua_per_trial_type_ci(new_projection_evolution.sel(dimensions='dim-1'))
+
             # compute the mutual information
             projection_evolution_mi = \
                 compute_mutual_information(projected_data_xr=new_projection_evolution,
                                            num_dims=n_dims, behavioral_condition=behavior)
-            # # plot the mutual information
-            # figure_mi, axis_mi = plt.subplots(figsize=(15, 3))
-            # plot_significant_mi(mua_xr=projection_evolution_mi,
-            #                     axis=axis_mi,
-            #                     behavioral_condition=behavior,
-            #                     trials_color=method)
-            # figure_mi.savefig(os.path.join(PATH_FIGURES,
-            #                                f'{SESSION}_probe_{probe}_mutual_information.png'),
-            #                   dpi=300, bbox_inches='tight')
-            #
+            # plot the mutual information
+            figure_mi, axis_mi = plt.subplots(figsize=(15, 3))
+            plot_significant_mi(mua_xr=projection_evolution_mi,
+                                axis=axis_mi,
+                                behavioral_condition=behavior,
+                                trials_color=method)
+
             # compute the Shannon entropy
             new_weight_evolution_full = \
                 compute_shannon_entropy_xr(weights_xr=new_weight_evolution, num_dims=n_dims)
-
-            projection_evolution_mi['method'] = method
-            new_weight_evolution_full['method'] = method
-
-            # 6) Create a dataset with both arrays and save the results
-            dataset = xr.Dataset({'weights_evolution': new_weight_evolution_full,
-                                  'projected_single_trials': projection_evolution_mi})
-            # add attributes
-            dataset.attrs = mua_site.attrs
-            dataset.attrs['method'] = method
-            dataset.attrs['window_size'] = window_size
-            dataset.attrs['t_step'] = t_step
-
-            # save the dataset
-            dataset.to_netcdf(os.path.join(PATH_DATA,
-                                           f'{SESSION}_probe_{probe}_{method}_{behavior}_win_200'
-                                           f'.nc'))
-
-            # close the figures
-            plt.close('all')
-            io.logger.info(f'Finished processing {SESSION} probe {probe} with {method} method!')
