@@ -378,21 +378,12 @@ if __name__ == "__main__":
                                        xlabel=None,
                                        ylabel=None)
 
-            # figure_similarity.savefig(os.path.join(PATH_FIGURES,
-            #                                        f'{SESSION}_probe_{probe}_similarity_{method}_'
-            #                                        f'{behavior}-trial_type-{trial_type}.png'),
-            #                           dpi=300, bbox_inches='tight')
-
             # save the similarity matrix
             similarity_xr = xr.DataArray(np.array(all_similarity),
                                          dims=['bootstraps', 'times', 'times'],
                                          coords={'bootstraps': range(n_bts),
                                                  'times': all_middle_times},
                                          attrs=mua_site_shorter.attrs)
-
-            # similarity_xr.to_netcdf(os.path.join(PATH_DATA,
-            #                                      f'{SESSION}_probe_{probe}_similarity_{method}_'
-            #                                      f'{behavior}_trial_type_{trial_type}_cv.nc'))
 
             plt.close('all')
             io.logger.info(f'Finished processing {SESSION} probe {PROBE} with {method} method!')
