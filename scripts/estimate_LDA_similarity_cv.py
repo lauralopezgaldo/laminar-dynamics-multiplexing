@@ -335,6 +335,7 @@ def plot_similarity_matrix(cosine_similarity_mat,
     axis.set_xlabel(xlabel, fontsize=12)
     axis.set_ylabel(ylabel, fontsize=12)
     axis.set_title(title, fontsize=14)
+
     return figure
 
 
