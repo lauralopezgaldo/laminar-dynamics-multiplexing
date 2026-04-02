@@ -7,3 +7,9 @@ matplotlib-inline==0.1.6
 sklearn==0.0
 frites @ git+https://github.com/brainets/frites.git@0844598951a3f554276894d2c60f45a5751961d8
 openpyxl==3.0.10
+jupyterlab==3.4.7
+notebook==6.4.12
+ipympl==0.9.4
+ipywidgets==8.0.4
+ipython==8.5.0
+seaborn==0.13.0

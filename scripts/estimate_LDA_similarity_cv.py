@@ -1,9 +1,8 @@
 import os
 import warnings
-import numpy as np
 import re
 import h5py
-# from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
 import pandas as pd
 import xarray as xr
 import matplotlib.pyplot as plt
@@ -38,7 +37,7 @@ def cut_mua_by_markers_fixed_samples(mua_xr, event_start, t_extra=(-1, +5.5),
     # get the time extra (positive and negative)
     t_before, t_after = t_extra
 
-    # Find the index where time is closest to 0
+    # find the index where time is closest to 0
     start_val = mua_xr.times.sel(times=t_start, method="nearest").item()
     start_index = mua_xr.times.to_index().get_loc(start_val)
 
@@ -72,8 +71,7 @@ def split_train_test(mua_xr, condition, seed=0, percent_train=0.5):
     # Determine the minimum number of trials available across all classes
     min_trials_per_class = min([
         np.sum(mua_xr[condition].values == c)
-        for c in classes
-    ])
+        for c in classes])
 
     # Decide how many trials per class to keep in training
     n_keep_per_class = int(np.floor(min_trials_per_class * percent_train))
@@ -105,111 +103,6 @@ def split_train_test(mua_xr, condition, seed=0, percent_train=0.5):
     return mua_xr_train, mua_xr_test
 
 
-def run_dimensionality_reduction_analysis_crossval(mua_xr_train, mua_xr_test, method_name, num_dims,
-                                                   behavioral_condition='trial_type'):
-    """
-    Run the dimensionality reduction analysis on the MUA data.
-    :param mua_xr_train: DataArray with the MUA data, cut in the specific window in which we want to
-    train the model
-    :param mua_xr_test: DataArray with the MUA data, cut in the specific window in which we want to
-    test the model
-    :param method_name: string with the name of the method to use for the dimensionality reduction
-    either 'PCA' or 'LDA'
-    :param num_dims: int with the number of dimensions to reduce the data to
-    :param behavioral_condition: string with the name of the behavioral condition to use for the
-    dimensionality reduction regression. Default is 'trial_type' (blue, green, pink)
-    ----
-    :return:
-    """
-    # 1) Define the labels for the dimensions, layers and flatten the single trials inside the
-    # time window
-    dimension_labels = [f'dim-{i}' for i in range(1, num_dims + 1)]
-
-    # make sure that the behavioral condition is on the star dimensions
-    mua_xr_train = mua_xr_train.swap_dims({'trial_type': behavioral_condition})
-    mua_xr_test = mua_xr_test.swap_dims({'trial_type': behavioral_condition})
-
-    # prepare the training data
-    mua_flat_train = mua_xr_train.stack(samples=(behavioral_condition, 'times'))
-    mua_flat_test = mua_xr_test.stack(samples=(behavioral_condition, 'times'))
-    layers = mua_xr_train.layers.values
-
-    # get the n_times to reshape back correctly
-    n_times_epoch = len(mua_xr_test.times)
-    n_trials_test = len(mua_xr_test.trial_type)
-
-    # 2) Fit and transform the data - build the space from the single trials
-    if method_name == 'PCA':
-        clf = PCA(n_components=num_dims)
-
-        # fit and project the PCA
-        clf.fit(mua_flat_train.values.T)
-        proj_single_trials_flat = \
-            clf.transform(mua_flat_test.values.T)
-
-    elif method_name == 'LDA':
-        clf = LDA(n_components=num_dims)
-        # get the labels matching the single trials
-        labels = mua_flat_train[behavioral_condition].values
-
-        # fit and project the LDA
-        clf.fit(mua_flat_train.values.T, labels)
-
-        # project the test data
-        proj_single_trials_flat = clf.transform(mua_flat_test.values.T)
-
-    else:
-        raise ValueError('Method not recognized')
-
-    # 3) Reshape the single trials and average them inside the time-window
-    # reshape the single trials
-    proj_single_trials = proj_single_trials_flat.reshape(n_trials_test, n_times_epoch, num_dims)
-
-    # average the single trials inside the window
-    proj_single_trials_avg = proj_single_trials.mean(axis=1)  # average over the time
-
-    # 4) Correct the sign - if PCA - just by making it positive (the max value)
-    mappers = np.zeros((len(layers), num_dims))
-    for i_dim in range(num_dims):
-        if method_name == 'PCA':
-            # change the sign if the maximum absolute value entry is negative
-            idx_max = np.argmax(np.abs(clf.components_[i_dim, :]))
-            if clf.components_[i_dim, idx_max] < 0:
-                proj_single_trials_avg[:, i_dim] = \
-                    -proj_single_trials_avg[:, i_dim]
-                mappers[:, i_dim] = -clf.components_[i_dim, :]
-            else:
-                mappers[:, i_dim] = clf.components_[i_dim, :]
-
-        elif method_name == 'LDA':
-            mappers[:, i_dim] = clf.scalings_[:, i_dim]
-
-    # 5) Build the x_arrays with both data
-    # Create the x_array with the projections
-    proj_single_trials_avg_xr = xr.DataArray(proj_single_trials_avg, dims=('trial_type',
-                                                                           'dimensions'),
-                                             coords={'dimensions': dimension_labels,
-                                                     'trial_type':
-                                                         mua_xr_test['trial_type'].values},
-                                             attrs=mua_xr_test.attrs)
-
-    # add the movement direction to the xarray
-    proj_single_trials_avg_xr = proj_single_trials_avg_xr.assign_coords(
-        mvt_dir=('trial_type', mua_xr_test.mvt_dir.values),
-        unamb_mask=('trial_type', mua_xr_test.unamb_mask.values),
-        block=('trial_type', mua_xr_test.block.values),
-        t_number=('trial_type', mua_xr_test.t_number.values)
-    )
-
-    # create the x_array for the weights
-    weights_xr = xr.DataArray(mappers, dims=('layers', 'dimensions'),
-                              coords={'dimensions': dimension_labels,
-                                      'layers': layers},
-                              attrs=mua_xr_test.attrs)
-
-    return weights_xr, proj_single_trials_avg_xr
-
-
 def run_dimensionality_reduction_analysis_crossval_fast(mua_xr_train, method_name,
                                                         num_dims,
                                                         behavioral_condition='trial_type'):
@@ -225,10 +118,7 @@ def run_dimensionality_reduction_analysis_crossval_fast(mua_xr_train, method_nam
     ----
     :return:
     """
-    # 1) Define the labels for the dimensions, layers and flatten the single trials inside the
-    # time window
-    dimension_labels = [f'dim-{i}' for i in range(1, num_dims + 1)]
-
+    # 1)
     # make sure that the behavioral condition is on the star dimensions
     mua_xr_train = mua_xr_train.swap_dims({'trial_type': behavioral_condition})
 
@@ -343,65 +233,39 @@ if __name__ == "__main__":
     # define the sessions to run the analysis
     SITES = ['Mo180412002']
 
+    # set the path to the data
+    PATH = "data/"
+
     # all possible probes
-    probes = [1, 2]
+    PROBES = [1]
+
     # define the method to run
     method = 'LDA'  # 'PCA' or 'LDA'
     behavior = 'mvt_dir'  # 'trial_type' or 'mvt_dir'
-    trial_type = 3  # trial type to use to compute the mvt_dir behavior
+    trial_type = 2  # trial type used to compute the mvt_dir behavior: 1 (blue), 2 (green), 3(pink)
 
-    # specific parameters
+    # specific parameters for windows and bootstraps
     window_size = 0.2  # 150ms
     t_step = 0.025  # 25ms
     n_bts = 50  # number of bootstrap iterations
 
-    # set the paths
-    current_path = os.getcwd()
-
-    if current_path.startswith('C:'):
-        server = 'W:'  # local w VPN
-    else:
-        server = '/envau/work'  # niolon
-
-    # path of the figures
-    PATH_FIGURES = server + \
-        '/comco/lopez.l/Electrophysiology/ephy_laminar_MUA/Results/Full_trial/' \
-        'plots_new_sites/supplementary/'
-
-    # path of the figures
-    PATH_EXCEL = server + \
-        '/comco/lopez.l/Electrophysiology/ephy_laminar_MUA/Results/Full_trial/' \
-        'plots_similarity_corrected/'
-
     # load the excel file from the PATH_Figures
-    excel_file = os.path.join(PATH_EXCEL, f'Mua_check_channels.xlsx')
+    excel_file = os.path.join(PATH, f'Mua_check_channels.xlsx')
 
-    # load the excel file
+    # load the excel file with important metadata
     df_mua_info = pd.read_excel(excel_file)
 
-    # loop over the sessions
-    for SESSION in ALL_LAMINAR:
-        # set the path of the data and get the name of the files
-        PATH = server + \
-            '/comco/lopez.l/Electrophysiology/ephy_laminar_MUA/Results/Preprocessed_data/' + \
-            SESSION + '/'
-        PATH_DATA = server + \
-            '/comco/lopez.l/Electrophysiology/ephy_laminar_MUA/Results/Full_trial/' \
-            'data_paper/' + SESSION + '/'
-
-        # create the directory if it does not exist
-        if not os.path.exists(PATH_DATA):
-            os.makedirs(PATH_DATA)
-
+    # loop over the sites
+    for SESSION in SITES:
         # iterate on the probes
-        for probe in probes:
+        for PROBE in PROBES:
             # Open in this case the single trials aligned to SEL because the SC2 ones are not full
             file_name_mua = [i for i in os.listdir(PATH) if os.path.isfile(os.path.join(PATH, i))
                              and
                              f'{SESSION}' in i and '.nc' in i and 'MUA-' in i and 'Sel' in i and
-                             'SC' not in i and f'probe_{probe}' in i]
+                             'SC' not in i and f'probe_{PROBE}' in i]
             if len(file_name_mua) == 0:
-                io.logger.info(f'No MUA file found for probe {probe}')
+                io.logger.info(f'No MUA file found for probe {PROBE}')
                 continue
             else:
                 file_name_mua = file_name_mua[0]
@@ -421,7 +285,7 @@ if __name__ == "__main__":
 
             # 2) Select the channels of interest: remove bad channels
             df_mua_site = df_mua_info[np.logical_and(df_mua_info['session'] == SESSION,
-                                                     df_mua_info['probe'] == probe)]
+                                                     df_mua_info['probe'] == PROBE)]
 
             bad_channel = df_mua_site.bad_channels.values[0]
 
@@ -457,10 +321,6 @@ if __name__ == "__main__":
             n_dims = 1
             # iterate on the bootstrap iterations - to get different data splits
             for bt in range(n_bts):
-                # store all the projected data
-                all_projected_data = []
-                all_weight_evolution = []
-
                 # 2) Sub-select half of the trials to train and half to test
                 if behavior == 'trial_type':
                     mua_train, _ = split_train_test(mua_xr=mua_site_shorter,
@@ -514,14 +374,14 @@ if __name__ == "__main__":
             figure_similarity = \
                 plot_similarity_matrix(cosine_similarity_mat=similarity_avg,
                                        times=all_middle_times, attributes=mua_site_shorter.attrs,
-                                       title=f'Similarity-{SESSION}-{probe}-{method}-{trial_type}',
+                                       title=f'Similarity-{SESSION}-{PROBE}-{method}-{trial_type}',
                                        xlabel=None,
                                        ylabel=None)
 
-            figure_similarity.savefig(os.path.join(PATH_FIGURES,
-                                                   f'{SESSION}_probe_{probe}_similarity_{method}_'
-                                                   f'{behavior}-trial_type-{trial_type}.png'),
-                                      dpi=300, bbox_inches='tight')
+            # figure_similarity.savefig(os.path.join(PATH_FIGURES,
+            #                                        f'{SESSION}_probe_{probe}_similarity_{method}_'
+            #                                        f'{behavior}-trial_type-{trial_type}.png'),
+            #                           dpi=300, bbox_inches='tight')
 
             # save the similarity matrix
             similarity_xr = xr.DataArray(np.array(all_similarity),
@@ -530,9 +390,9 @@ if __name__ == "__main__":
                                                  'times': all_middle_times},
                                          attrs=mua_site_shorter.attrs)
 
-            similarity_xr.to_netcdf(os.path.join(PATH_DATA,
-                                                 f'{SESSION}_probe_{probe}_similarity_{method}_'
-                                                 f'{behavior}_trial_type_{trial_type}_cv.nc'))
+            # similarity_xr.to_netcdf(os.path.join(PATH_DATA,
+            #                                      f'{SESSION}_probe_{probe}_similarity_{method}_'
+            #                                      f'{behavior}_trial_type_{trial_type}_cv.nc'))
 
             plt.close('all')
-            io.logger.info(f'Finished processing {SESSION} probe {probe} with {method} method!')
+            io.logger.info(f'Finished processing {SESSION} probe {PROBE} with {method} method!')
