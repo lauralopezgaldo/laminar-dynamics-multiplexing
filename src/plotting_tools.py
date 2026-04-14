@@ -1,3 +1,7 @@
+"""
+This file contains functions used to plot the results of the analysis.
+"""
+
 import re
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,7 +11,7 @@ from frites.stats.stats_nonparam import confidence_interval
 
 def plot_mua_per_mvt_dir_ci(mua_xr):
     """
-    Plots the average MUA per movement dirction and the confidence interval on the single trials
+    Plots the average MUA per movement direction and the confidence interval on the single trials
     with a
     more transparent color.
     :param mua_xr: xarray with the MUA data
@@ -154,12 +158,15 @@ def plot_weight_evolution(coefficients_evolution, i_dimension):
     onset_events = coefficients_evolution.task_events_onset
     events_labels = re.split('-', coefficients_evolution.task_events_labels)
 
+    # channel number labels
+    channel_idx_range = np.arange(len(coefficients_evolution.layers))[::-1]
+
     # plot the weights in the upper one
     cax1 = axis.pcolormesh(coefficients_evolution.times.values,
-                           np.arange(coefficients_evolution.shape[1])[::-1],
-                           coefficients_evolution.sel(dimensions=f'dim-{i_dimension+1}')[:, :].T,
+                           channel_idx_range,
+                           coefficients_evolution.sel(dimensions=f'dim-{i_dimension+1}').values,
                            cmap='coolwarm', shading='auto', vmax=v_max, vmin=v_min)
-    axis.set_yticks(np.arange(coefficients_evolution.shape[1])[::-1],
+    axis.set_yticks(channel_idx_range,
                     coefficients_evolution.layers.values)
     axis.set_xticks(onset_events[1:-1], events_labels[1:-1], fontsize=16)
     [axis.axvline(line, color='white', linestyle='--') for line in onset_events[1:-1]]
@@ -231,3 +238,39 @@ def plot_significant_mi(mua_xr, axis, behavioral_condition, trials_color=None):
     axis.set_ylabel('normalized MI')
     axis.set_ylim(-.05, .65)
     axis.spines['bottom'].set_visible(False)
+
+
+def plot_shannon_entropy(projected_mua_xr, axis, method=None, trials_color=None):
+    """
+    Plots the Shannon entropy of the PCA components in time.
+    :param projected_mua_xr: projected_mua_xr with the projected data
+    :param axis: axis to plot the entropy
+    :param method: method used to project the data ('LDA', 'PCA'), it will define color.
+    :param trials_color: color of the trials to plot
+    :return:
+    """
+    if trials_color == 'b':
+        color_line = 'tab:blue'
+    elif trials_color == 'g':
+        color_line = 'tab:green'
+    elif trials_color == 'p':
+        color_line = 'pink'
+    elif trials_color == 'LDA':
+        color_line = '#da635d'
+    elif trials_color == 'PCA':
+        color_line = '#b1938b'
+    else:
+        color_line = 'k'
+    # get the timing of the events
+    onset_events = projected_mua_xr.task_events_onset
+    events_labels = re.split('-', projected_mua_xr.task_events_labels)
+    axis.plot(projected_mua_xr.times, projected_mua_xr['entropy_dim-1'], color=color_line,
+              linewidth=2.5, label=method, linestyle='--')
+    [axis.axvline(line, color='lightgray', linestyle='--', lw=1) for line in onset_events[2:-1]]
+    [axis.axvline(line + .3, color='lightgray', linestyle='--', lw=1) for line in
+     onset_events[2:-2]]
+    axis.set_xticks(onset_events[1:-1], events_labels[1:-1], fontsize=14)
+    axis.set_xlim([projected_mua_xr.times[0] - .1, projected_mua_xr.times[-1] - .1])
+    axis.set_ylabel('Shannon Entropy %', fontsize=12)
+    axis.set_xlim([onset_events[1] - .1, onset_events[-1] - .1])
+    axis.set_ylim([0, 1])
