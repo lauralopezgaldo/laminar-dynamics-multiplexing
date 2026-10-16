@@ -95,6 +95,9 @@ if __name__ == "__main__":
     method = 'LDA'  # 'PCA' or 'LDA'
     behavior = 'trial_type'  # 'trial_type' or 'mvt_dir'
 
+    # define the step used for the LD1 (100 or 50ms)
+    step = '100'
+
     # store across all sites
     cosine_periodicity = []
 
@@ -110,13 +113,14 @@ if __name__ == "__main__":
 
     PATH_FIGURES = server + \
         '/comco/lopez.l/Electrophysiology/ephy_laminar_MUA/Results/Full_trial/' \
-        'plots_revisions/similarity/similarity_win_50_no_overlap/'
+        'plots_revisions/similarity/similarity_win_' + step + '_no_overlap/'
 
     # loop over the sessions
     for SESSION in SESSIONS:
         PATH_DATA = server + \
                     '/comco/lopez.l/Electrophysiology/ephy_laminar_MUA/Results/Full_trial/' \
-                    'plots_revisions/similarity/similarity_win_50_no_overlap/data/' + SESSION + '/'
+                    'plots_revisions/similarity/similarity_win_' + step + '_no_overlap/data/'\
+                    + SESSION + '/'
 
         # iterate on the probes
         for probe in probes:
@@ -148,7 +152,7 @@ if __name__ == "__main__":
             idx_SC1 = np.argmin(abs(similarity_mat.times - t_SC1).values)
 
             # define the parameters to compute the correlation
-            dt = 0.05  # TO be adapted to the STEP of the LD1 weigths
+            dt = np.round(np.diff(similarity_mat.times)[0], 3)  # linked to the step of the LD1
             max_tau = 2  # s
             n_max_tau = int(max_tau/dt)  # amount of dots in the matrix to take
 
