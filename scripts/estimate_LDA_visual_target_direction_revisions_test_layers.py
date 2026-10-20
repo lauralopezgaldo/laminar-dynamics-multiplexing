@@ -1,5 +1,5 @@
 """
-This script builds ont he previous script which was taking the MUA in each site and computeing
+This script builds ont he previous script which was taking the MUA in each site and computing
 the LDA dimension that best split the four movement directions at the moment of correct target
 shown. It recomputes the LDA for each of the
 cues and checks again the measure. It uses the distance metric as the other script.
@@ -323,12 +323,11 @@ if __name__ == "__main__":
                 'Mo180601001',
                 'Mo180523002', 'Mo180705002', 'Mo180706002', 'Mo180710002',
                 'Mo180711004', 'Mo180712006', 't150303002', 't150319003', 't150423002',
-                't150430002', 't150320002',
-                't140924003', 't140930001', 't141001001', 't141008001', 't141010003',
-                't150122001', 't150123001', 't150128001', 't150204001', 't150205004',
+                't150320002',
+                't150123001', 't150128001', 't150204001',
+                't150205004',
                 't150716001',
-                'Mo180615002-Mo180615005', 't150327002-t150327003',
-                't150702002-t150702001']
+                'Mo180615002-Mo180615005', 't150327002-t150327003']
 
     # all possible probes
     probes = [1, 2]
