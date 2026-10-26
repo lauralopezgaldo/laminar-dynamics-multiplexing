@@ -132,4 +132,3 @@ if __name__ == "__main__":
         fig.suptitle('Number of channels per layer across sites (41 total sites)')
         fig.tight_layout()
         sns.despine(fig)
-
