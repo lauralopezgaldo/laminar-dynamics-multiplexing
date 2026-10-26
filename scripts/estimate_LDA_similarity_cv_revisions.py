@@ -350,8 +350,6 @@ if __name__ == "__main__":
                    't150716001',
                    'Mo180615002-Mo180615005', 't150327002-t150327003']
 
-    ALL_LAMINAR = ['Mo180412002']
-
     # all possible probes
     probes = [1, 2]
     # define the method to run
