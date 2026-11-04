@@ -116,11 +116,24 @@ if __name__ == "__main__":
                                  f'{SESSION}_{probe}' in i and '.csv' in i and 'cv_accuracy' in i
                                  and 'LDA_SCs' in i and behavior in i and 'leave_one_out' in i][0]
 
-                file_name_sl = [i for i in os.listdir(PATH_DATA_REVISIONS) if
-                                os.path.isfile(os.path.join(PATH_DATA_REVISIONS, i))
-                                and
-                                f'{SESSION}_{probe}' in i and '.csv' in i and 'cv_accuracy' in i
-                                and 'LDA_SCs' in i and behavior in i and 'one_layer' in i][0]
+                # some sites might not have this file, because there were not enough channels
+                # per layer. For this reason, the results of this analysis might not match exactly
+                # with the numbers in the original paper. In other words, all these sites are in the
+                # original paper, but not all the original sites are here.
+                file_matches_sl = [
+                    i for i in os.listdir(PATH_DATA_REVISIONS)
+                    if os.path.isfile(os.path.join(PATH_DATA_REVISIONS, i))
+                    and f'{SESSION}_{probe}' in i
+                    and '.csv' in i
+                    and 'cv_accuracy' in i
+                    and 'LDA_SC' in i
+                    and behavior in i
+                    and 'one_layer_balanced' in i]
+
+                if not file_matches_sl:
+                    continue
+
+                file_name_sl = file_matches_sl[0]
 
             # load the dataframe
             df = pd.read_csv(os.path.join(PATH_DATA, file_name_mua))
@@ -422,7 +435,7 @@ if __name__ == "__main__":
             fig.savefig(
                 os.path.join(PATH_FIGURES,
                              f'{monkey_name}_{cue}_diff_distance_layers_leave_one_out_'
-                             f'{behavior}.png'),
+                             f'{behavior}.svg'),
                 bbox_inches='tight', dpi=300)
 
     # SINGLE LAYER
@@ -589,5 +602,5 @@ if __name__ == "__main__":
             fig.savefig(
                 os.path.join(PATH_FIGURES,
                              f'{monkey_name}_{cue}_diff_distance_layers_single_layer_'
-                             f'{behavior}.png'),
+                             f'{behavior}_balanced.svg'),
                 bbox_inches='tight', dpi=300)
