@@ -1,5 +1,5 @@
 """
-This script opens the LDA evolution for each site and computes the grassmanian trajectory.
+This script opens the LDA evolution for each site and computes the Grassmanian trajectory.
 Mainly for visualization purpose, nothing better than propagation scaffold.
 """
 
@@ -23,11 +23,8 @@ if __name__ == "__main__":
     # define all sites
     ALL_LAMINAR = ['Mo180412002']
 
-    # add the path
-    PATH = 'data/'
-
     # all possible probes
-    probes = [1, 2]
+    probes = [1]
     # define the method to run
     method = 'LDA'  # 'PCA' or 'LDA'
     behavior = 'trial_type'  # 'trial_type' or 'mvt_dir'
@@ -42,10 +39,18 @@ if __name__ == "__main__":
     else:
         server = '/envau/work'  # niolon
 
+    PATH_FIGURES = server + \
+        '/comco/lopez.l/Electrophysiology/ephy_laminar_MUA/Results/Full_trial/' \
+        '/plots_revisions/grassmanian/'
+
     # loop over the sessions
     for SESSION in ALL_LAMINAR:
         # iterate on the probes
         for probe in probes:
+            PATH = server + \
+                        '/comco/lopez.l/Electrophysiology/ephy_laminar_MUA/Results/Full_trial/' \
+                        'data_paper/' + SESSION + '/'
+
             # Open the evolution of the LDA computed for one cross-validation fold
             file_name_mua = [i for i in os.listdir(PATH) if
                              os.path.isfile(os.path.join(PATH, i))
@@ -95,10 +100,10 @@ if __name__ == "__main__":
             sns.set_style('ticks')
             fig = plt.figure(figsize=(10, 10))
             ax = fig.add_subplot(111, projection='3d')
-            ax.plot(LD1.times, LD_grass_filt[:, 0], LD_grass_filt[:, 1],
+            ax.plot(LD1.times, LD_grass_filt[:, 0], -LD_grass_filt[:, 1],
                     alpha=.6, linewidth=2, color='k')
-            cbar = ax.scatter3D(LD1.times, LD_grass_filt[:, 0], LD_grass_filt[:, 1],
-                                alpha=.55, s=180,
+            cbar = ax.scatter3D(LD1.times, LD_grass_filt[:, 0], -LD_grass_filt[:, 1],
+                                alpha=.65, s=180,
                                 c=idx_layers.values, cmap="icefire",
                                 vmin=0.5, vmax=1.5)
             plt.colorbar(cbar)
@@ -129,6 +134,6 @@ if __name__ == "__main__":
 
             fig.suptitle(f'{SESSION} - Probe {probe} - {method} - {behavior}', fontsize=16)
             fig.tight_layout()
-            fig.savefig(os.path.join(PATH,
+            fig.savefig(os.path.join(PATH_FIGURES,
                                      f'{SESSION}_probe_{probe}_{method}_{behavior}.png'),
                         dpi=300, bbox_inches='tight')
