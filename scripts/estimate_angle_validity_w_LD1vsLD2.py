@@ -10,6 +10,7 @@ from frites import io
 from frites.stats.stats_nonparam import confidence_interval
 import matplotlib.colors as mcolors
 from scipy.signal import savgol_filter
+import seaborn as sns
 
 # to remove the spam of pandas FutureWarning with iteritems
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -564,3 +565,59 @@ if __name__ == "__main__":
 
     df_angles.to_csv(
         os.path.join(PATH_FIGURES, 'validity_angles_all_sites.csv'), index=False)
+
+    # plot
+    # Style
+    sns.set_theme(style='ticks', context='poster')
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+    # LD1 histogram
+    sns.histplot(
+        data=df_angles,
+        x='angle_LD1',
+        color='#3B82A0',
+        alpha=0.25,
+        bins=10,
+        stat='density',
+        edgecolor=None,
+        linewidth=0,
+        ax=ax
+    )
+    # LD2 histogram
+    sns.histplot(
+        data=df_angles,
+        x='angle_LD2',
+        color='#D9825B',
+        alpha=0.25,
+        bins=10,
+        stat='density',
+        edgecolor=None,
+        linewidth=0,
+        ax=ax
+    )
+    # KDE curves
+    sns.kdeplot(
+        data=df_angles,
+        x='angle_LD1',
+        color='#3B82A0',
+        linewidth=2.5,
+        ax=ax,
+        label='angle with LD1'
+    )
+    sns.kdeplot(
+        data=df_angles,
+        x='angle_LD2',
+        color='#D9825B',
+        linewidth=2.5,
+        ax=ax,
+        label='angle with LD2'
+    )
+    # Formatting
+    ax.set_xlabel('Angle (degrees)', fontsize=16)
+    ax.set_ylabel('Density', fontsize=16)
+    ax.set_xlim(0, 100)
+    ax.set_xticks(range(0, 101, 20))
+    ax.legend(frameon=False, fontsize=14)
+    ax.set_title('Angle between the validity axes and each LD for trial type')
+    sns.despine()
+    plt.tight_layout()
+    plt.show()
