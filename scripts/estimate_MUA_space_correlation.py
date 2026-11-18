@@ -5,10 +5,7 @@ import h5py
 import numpy as np
 import pandas as pd
 import xarray as xr
-import matplotlib.pyplot as plt
-from sklearn.decomposition import PCA
 from frites import io
-import seaborn as sns
 
 # to remove the spam of pandas FutureWarning with iteritems
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -389,4 +386,3 @@ if __name__ == "__main__":
     #                          f'Correlation_vs_distance{SESSION}-{PROBE}.png'))
     #
     # plt.close('all')
-
